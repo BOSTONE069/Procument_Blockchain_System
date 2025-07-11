@@ -1,0 +1,29 @@
+{
+  "canisters": {
+    "procurement_platform_backend": {
+      "main": "src/procurement_platform_backend/main.mo",
+      "type": "motoko"
+    },
+    "procurement_platform_frontend": {
+      "dependencies": [
+        "procurement_platform_backend"
+      ],
+      "frontend": {
+        "entrypoint": "src/procurement_platform_frontend/src/index.html"
+      },
+      "source": [
+        "src/procurement_platform_frontend/assets",
+        "dist/procurement_platform_frontend/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
