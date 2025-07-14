@@ -44,6 +44,13 @@ actor Procurement {
   // Params: id - unique tender ID, description - tender description
   // Returns: true if tender created successfully
   public shared(msg) func createTender(id: Text, description: Text) : async Bool {
+    // Validate tender ID uniqueness and non-empty description
+    if (id == "" or description == "") {
+      return false;
+    };
+    if (tenders.containsKey(id)) {
+      return false;
+    };
     let tender : Tender = {
       id = id;
       description = description;
@@ -53,6 +60,38 @@ actor Procurement {
     };
     tenders.put(id, tender);     // Store the tender in the map
     true
+  };
+  
+  public shared(msg) func submitBid(tenderId: Text, amount: Nat) : async Bool {
+    // Validate positive bid amount
+    if (amount == 0) {
+      return false;
+    };
+    switch (tenders.get(tenderId)) {
+      case (null) { false }; // Tender doesn't exist
+      case (?tender) {
+        if (tender.status != "Open") { return false }; // Only open tenders accept bids
+        let bid : Bid = {
+          tenderId = tenderId;
+          bidder = msg.caller;     // Caller is the bidder
+          amount = amount;
+          submittedAt = Time.now(); // Current time as submission time
+        };
+        // Use composite key of tenderId, bidder principal text, and submission timestamp to allow multiple bids
+        let submittedAtText = Int.toText(bid.submittedAt);
+        switch (Nat.fromText(submittedAtText)) {
+          case (?natVal) {
+            let timestampText = Nat64.toText(Nat64.fromNat(natVal));
+            bids.put(tenderId # "-" # Principal.toText(msg.caller) # "-" # timestampText, bid);
+          };
+          case (null) {
+            // Fallback: use submittedAt as text directly (may cause key collisions)
+            bids.put(tenderId # "-" # Principal.toText(msg.caller) # "-" # submittedAtText, bid);
+          };
+        };
+        true
+      };
+    }
   };
 
   // Submit a bid for a tender
